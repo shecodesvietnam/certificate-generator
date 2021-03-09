@@ -75,9 +75,12 @@ def index():
 
 
 # TODO: Write the logic of send-email
+# Additional fields in formData: email-receivers (name input or csv upload), email-message
+# Other fields stay the same
 @app.route('/send-email', methods=['POST'])
 def send_email():
-    print(request.form['email-receivers'])
+    # TODO: Generate certificates
+    # TODO: Send emails with those certificates
     return jsonify({'msg': 'Successfully sent emails'})
 
 
