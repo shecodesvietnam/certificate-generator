@@ -74,7 +74,14 @@ def index():
     return render_template('homepage/index.html')
 
 
-@app.route('/create', methods=['POST'])
+# TODO: Write the logic of send-email
+@app.route('/send-email', methods=['POST'])
+def send_email():
+    print(request.form['email-receivers'])
+    return jsonify({'msg': 'Successfully sent emails'})
+
+
+@app.route('/generate', methods=['POST'])
 def get_input():
     """
     Returns status code 400 if no files uploaded.

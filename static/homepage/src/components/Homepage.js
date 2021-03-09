@@ -4,6 +4,8 @@ import $ from "jquery";
 import { Modal } from "react-bootstrap";
 import axios from "axios";
 import FileDownload from "js-file-download";
+import { toast, ToastContainer } from "react-toastify";
+
 import "./Homepage.css";
 
 class HomePage extends Component {
@@ -21,7 +23,6 @@ class HomePage extends Component {
       disableName: false,
       x: null,
       y: null,
-      action: props.match.path.replace("/", ""),
     };
     this.onTemplateChange = this.onTemplateChange.bind(this);
     this.onCSVChange = this.onCSVChange.bind(this);
@@ -121,12 +122,12 @@ class HomePage extends Component {
   }
 
   async handleSubmit() {
-    console.log(this.state);
+    const { pathname } = this.props.location;
     const formData = new FormData();
 
     formData.append("template", this.state.template);
-    formData.append("x-coordinate", this.state.x);
-    formData.append("y-coordinate", this.state.y);
+    formData.append("x-coordinate", this.state.x || 50);
+    formData.append("y-coordinate", this.state.y || 50);
 
     if (this.state.inputName === "" && this.state.csvFile != null) {
       // User input name but doesn't input csv file
@@ -143,16 +144,41 @@ class HomePage extends Component {
       alert("Please input a name OR a CSV file to generate certificate");
     }
 
-    const response = await axios.post("/create", formData, {
-      responseType: "blob",
-    });
-    console.log("response " + response.data);
-    FileDownload(response.data, "certificates.zip");
+    try {
+      if (pathname === "/generate") {
+        const response = await axios.post(pathname, formData, {
+          responseType: "blob",
+        });
+        toast.success("Successfully Generated Certificates");
+        FileDownload(response.data, "certificates.zip");
+      } else {
+        // TODO: Edit email fields in formData
+        formData.append("email-receivers", null);
+        formData.append("email-message", "");
+        await axios.post(pathname, formData);
+        toast.success("Successfully Generated Certificates and Sent Emails");
+      }
+    } catch (error) {
+      toast.error("An unexpected error has occured");
+    }
   }
 
   render() {
+    const {
+      inputName,
+      disableName,
+      disableCSV,
+      file,
+      canvasImg,
+      isOpen,
+      csvFile,
+      template,
+    } = this.state;
+    const { pathname } = this.props.location;
+
     return (
       <div className="main">
+        <ToastContainer />
         <div className="container-fluid h-100">
           <div className="row align-items-center h-100">
             <div className="order-2 order-md-1 col-md-6 px-5 pt-5">
@@ -160,13 +186,13 @@ class HomePage extends Component {
               <form className="form pt-3">
                 <div className="input-group">
                   <input
-                    value={this.state.inputName}
+                    value={inputName}
                     onChange={(evt) => this.onChangeInputValue(evt)}
                     id="name"
                     type="text"
                     className="form-control"
                     placeholder="name"
-                    disabled={this.state.disableName ? "disabled" : ""}
+                    disabled={disableName ? "disabled" : ""}
                   />
                 </div>
               </form>
@@ -175,7 +201,7 @@ class HomePage extends Component {
                 <div class="upload-btn-wrapper">
                   <button
                     className="btn"
-                    disabled={this.state.disableCSV ? "disabled" : ""}
+                    disabled={disableCSV ? "disabled" : ""}
                   >
                     Upload a CSV file
                   </button>
@@ -185,7 +211,7 @@ class HomePage extends Component {
                     accept=".csv"
                     name="myfile"
                     onChange={this.onCSVChange}
-                    disabled={this.state.disableCSV ? "disabled" : ""}
+                    disabled={disableCSV ? "disabled" : ""}
                   />
                   <span id="fileName" className="ml-2"></span>
                 </div>
@@ -213,7 +239,7 @@ class HomePage extends Component {
                   Upload a certificate template
                 </p>
               </div>
-              {this.state.file && (
+              {file && (
                 <span
                   className="image-preview__delete-btn"
                   onClick={this.resetFile}
@@ -222,15 +248,15 @@ class HomePage extends Component {
               <img
                 id="blank-preview-image"
                 className="image-preview"
-                src={this.state.file}
+                src={file}
                 onClick={this.openModal}
               />
               <img
                 className="image-preview"
-                src={this.state.canvasImg}
+                src={canvasImg}
                 onClick={this.openModal}
               />
-              <Modal centered show={this.state.isOpen} onHide={this.closeModal}>
+              <Modal centered show={isOpen} onHide={this.closeModal}>
                 <canvas
                   id="imageCanvas"
                   onMouseOver={this.drawOverlayImage}
@@ -244,24 +270,23 @@ class HomePage extends Component {
               </Modal>
             </div>
           </div>
+          {
+            // ***************************************
+            // TODO: Render email with receivers input (name input or csv upload) field, message input field
+          }
+          <div></div>
+          {
+            // ***************************************
+          }
           <div className="d-flex justify-content-end">
-            {this.state.action === "generate" ? (
-              <button
-                className="btn"
-                onClick={() => this.handleSubmit()}
-                type="button"
-              >
-                Generate
-              </button>
-            ) : (
-              <button
-                className="btn"
-                onClick={() => this.handleClick()}
-                type="button"
-              >
-                Send Email
-              </button>
-            )}
+            <button
+              className="btn"
+              onClick={() => this.handleSubmit()}
+              type="button"
+              disabled={csvFile === null || template === null ? true : false}
+            >
+              {pathname === "/generate" ? "Generate" : "Send Email"}
+            </button>
           </div>
         </div>
       </div>
